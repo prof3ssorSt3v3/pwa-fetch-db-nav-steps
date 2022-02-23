@@ -51,7 +51,24 @@ const APP = {
   loadFromDB: () => {
     //used on the results page when loading the page
     DB.getMatch(APP.keyword);
-    DB.addEventListener('complete', APP.buildList, { once: true }); //after doing a search in db
+    DB.addEventListener(
+      'success',
+      (ev) => {
+        //successfully did the get
+        //save the matches in APP.dataList
+        APP.dataList = ev.detail.results;
+        // ev.target.result inside DB success event
+      },
+      { once: true }
+    ); //after doing a search in db
+    DB.addEventListener(
+      'complete',
+      (ev) => {
+        //transaction complete do the next step
+        APP.buildList();
+      },
+      { once: true }
+    ); //after doing a search in db
   },
   findInDBorFetch: (keyword) => {
     //do search in db for match after clicking search link
@@ -68,13 +85,43 @@ const APP = {
     // or add we don't need to do much here
     // }  =>  APP.dbMatchResults
     //this will trigger the `complete` event that will call matchFound
-    DB.addEventListener('complete', APP.dbMatchResults, { once: true }); //after doing a search in db
+    DB.addEventListener(
+      'success',
+      (ev) => {
+        // store.get is finished.
+        console.log(`results from db ${ev.detail.results}`);
+        APP.dataList = ev.detail.results; //ev.target.result
+      },
+      { once: true }
+    ); //after doing a search in db
+    DB.addEventListener(
+      'complete',
+      (ev) => {
+        //transaction complete
+        APP.dbMatchResults();
+      },
+      { once: true }
+    ); //after doing a search in db
   },
   saveToDB: (keyword, results) => {
     //save in db
     console.log(`save fetch results for ${keyword} in db`);
     DB.saveMatch(keyword, results);
-    DB.addEventListener('success', APP.dataSaved, { once: true }); //after saving a result in db
+    DB.addEventListener(
+      'success',
+      (ev) => {
+        //successfully saved the results in the database
+      },
+      { once: true }
+    ); //after saving a result in db
+    DB.addEventListener(
+      'complete',
+      (ev) => {
+        //transaction is complete do next step
+        APP.dataSaved();
+      },
+      { once: true }
+    ); //after saving a result in db
   },
   doFetch: (keyword) => {
     //do the fake call
@@ -100,8 +147,6 @@ const APP = {
   },
   dbMatchResults: (ev) => {
     //DB match results
-    console.log(`results from db ${ev.detail.results}`);
-    APP.dataList = ev.detail.results; //ev.target.result
     if (APP.dataList.length === 0) {
       //need to do fetch
       APP.doFetch(APP.keyword);
@@ -115,8 +160,7 @@ const APP = {
     console.log(`data saved in db ${ev.detail}`);
     APP.navigate(ev.detail.keyword);
   },
-  buildList: (ev) => {
-    APP.dataList = ev.detail.results; // ev.target.result inside DB success event
+  buildList: () => {
     console.log('build html');
     let main = document.querySelector('main');
     let df = document.createDocumentFragment();
@@ -150,6 +194,7 @@ class FAKEIDB extends EventTarget {
   getMatch(keyword) {
     //pretend to take a second
     this.keyword = keyword;
+    this.results = null;
     setTimeout(() => {
       //put the match or an empty array into FAKEIDB.results
       if (FAKEdbDATA[keyword]) {
@@ -157,7 +202,9 @@ class FAKEIDB extends EventTarget {
       } else {
         this.results = [];
       }
-      //send back a custom complete event with the results property
+      //fire the onsuccess event and then the oncomplete event
+      //the data will be inside the success event
+      this.dispatchEvent(this.onsuccess());
       this.dispatchEvent(this.oncomplete());
     }, 1000);
   }
@@ -165,22 +212,25 @@ class FAKEIDB extends EventTarget {
   saveMatch(keyword, results) {
     //pretend to take a second
     this.keyword = keyword;
+    this.results = null;
     setTimeout(() => {
       //save the data in the pretend database store
       FAKEdbDATA[keyword] = results;
-      //fire the onsuccess event
+      //fire the onsuccess event and then the oncomplete event
+      //the data will be inside the success event
       this.dispatchEvent(this.onsuccess());
+      this.dispatchEvent(this.oncomplete());
     }, 1000);
   }
 
   oncomplete() {
     //return a new custom complete event containing the results
-    return new CustomEvent('complete', { detail: { results: this.results } });
+    return new CustomEvent('complete', { detail: { complete: true } });
   }
 
   onsuccess() {
     return new CustomEvent('success', {
-      detail: { success: true, keyword: this.keyword },
+      detail: { results: this.results, success: true, keyword: this.keyword },
     });
   }
 }
