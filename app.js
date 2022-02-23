@@ -296,7 +296,7 @@ const FAKEapiDATA = {
     { id: 7, title: 'Groundhog Day' },
     { id: 8, title: 'Underground' },
   ],
-  Wheel: [
+  Wonder: [
     { id: 9, title: 'Wonder' },
     { id: 10, title: 'Wonder Woman' },
   ],
