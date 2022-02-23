@@ -57,6 +57,7 @@ const APP = {
         //successfully did the get
         //save the matches in APP.dataList
         APP.dataList = ev.detail.results;
+        console.log(`loadFromDB success ${APP.dataList}`);
         // ev.target.result inside DB success event
       },
       { once: true }
@@ -65,6 +66,7 @@ const APP = {
       'complete',
       (ev) => {
         //transaction complete do the next step
+        console.log(`loadFromDB complete`);
         APP.buildList();
       },
       { once: true }
@@ -111,6 +113,7 @@ const APP = {
       'success',
       (ev) => {
         //successfully saved the results in the database
+        APP.keyword = keyword;
       },
       { once: true }
     ); //after saving a result in db
@@ -155,10 +158,10 @@ const APP = {
       APP.navigate(APP.keyword);
     }
   },
-  dataSaved: (ev) => {
+  dataSaved: () => {
     //result saved in DB
-    console.log(`data saved in db ${ev.detail}`);
-    APP.navigate(ev.detail.keyword);
+    console.log(`data saved in db`);
+    APP.navigate(APP.keyword);
   },
   buildList: () => {
     console.log('build html');
@@ -189,6 +192,15 @@ class FAKEIDB extends EventTarget {
     super();
     this.results = null;
     this.keyword = null;
+    // get/set the data in sessionStorage
+    let storage = sessionStorage.getItem('FAKEdbDATA');
+    if (!storage) {
+      //put in the default
+      sessionStorage.setItem(JSON.stringify(FAKEdbDATA));
+    } else {
+      //put values from sessionStorage into our FAKE variable
+      FAKEdbDATA = JSON.parse(storage);
+    }
   }
 
   getMatch(keyword) {
@@ -212,10 +224,11 @@ class FAKEIDB extends EventTarget {
   saveMatch(keyword, results) {
     //pretend to take a second
     this.keyword = keyword;
-    this.results = null;
     setTimeout(() => {
       //save the data in the pretend database store
       FAKEdbDATA[keyword] = results;
+      //save in sessionStorage for next page load
+      sessionStorage.setItem('FAKEdbDATA', JSON.stringify(FAKEdbDATA));
       //fire the onsuccess event and then the oncomplete event
       //the data will be inside the success event
       this.dispatchEvent(this.onsuccess());
@@ -264,7 +277,8 @@ const FAKEAPI = {
 };
 
 const FAKEapiDATA = {
-  //this is the data in the database... pretend
+  //this is the data in the API... pretend
+  //this doesn't change so doesn't need to be in sessionStorage
   Train: [
     { id: 1, title: 'Train to Busan' },
     { id: 2, title: 'Trainwreck' },
