@@ -196,7 +196,7 @@ class FAKEIDB extends EventTarget {
     let storage = sessionStorage.getItem('FAKEdbDATA');
     if (!storage) {
       //put in the default
-      sessionStorage.setItem(JSON.stringify(FAKEdbDATA));
+      sessionStorage.setItem('FAKEdbDATA', JSON.stringify(FAKEdbDATA));
     } else {
       //put values from sessionStorage into our FAKE variable
       FAKEdbDATA = JSON.parse(storage);
@@ -248,8 +248,9 @@ class FAKEIDB extends EventTarget {
   }
 }
 
-const FAKEdbDATA = {
+let FAKEdbDATA = {
   //this is the data in the database... pretend
+  //uses let because it gets updated
   Train: [
     { id: 1, title: 'Train to Busan' },
     { id: 2, title: 'Trainwreck' },
